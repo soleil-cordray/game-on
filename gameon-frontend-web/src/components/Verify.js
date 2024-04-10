@@ -52,7 +52,10 @@ function Verify() {
                 const res = await fetch(buildPath('api/verify'),
                     { method: 'POST', body: js, headers: { 'Content-Type': 'application/json' } });
 
-                // Check if good 
+                window.location.href = '/login';
+            }
+            else {
+                setMessage("Invalid Verification Code");
             }
         }
         catch (e) {
