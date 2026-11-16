@@ -137,7 +137,7 @@ app.post('/api/email', async (req, res, next) => {
 
         results = await
             db.collection('users').findOne({ Email: email.toLowerCase() });
-        
+
         if (!results.Email) {
             error = "No Email Found";
         }
@@ -364,14 +364,14 @@ app.post('/api/send-email', async (req, res) => {
             port: 587,
             secure: false,
             auth: {
-                user: "cop4331gameon008@gmail.com", // Your Gmail email address
-                pass: "REMOVED", // Your Gmail password (consider using app-specific password)
+                user: process.env.EMAIL_USERNAME, // sender
+                pass: process.env.EMAIL_PASSWORD, // sender
             },
         });
 
         // Define email options
         let mailOptions = {
-            from: 'cop4331gameon008@gmail.com', // Sender email address
+            from: process.env.EMAIL_USERNAME, // sender
             to: emailR, // Recipient email address
             subject: 'GameOn Email Verification', // Email subject
             text: message, // Plain text body
@@ -389,7 +389,7 @@ app.post('/api/send-email', async (req, res) => {
             }
         });
     }
-    catch(e) 
+    catch(e)
     {
         error = e;
     }
