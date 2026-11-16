@@ -20,9 +20,9 @@ app.use(bodyParser.json());
 // Server static assets if in production
 if (process.env.NODE_ENV === 'production') {
     // Set static folder
-    app.use(express.static('gameon-frontend-web/build'));
+    app.use(express.static('web/build'));
     app.get('*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, 'gameon-frontend-web', 'build', 'index.html'));
+        res.sendFile(path.resolve(__dirname, 'web', 'build', 'index.html'));
     });
 }
 

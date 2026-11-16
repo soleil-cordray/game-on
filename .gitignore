@@ -13,7 +13,7 @@ node_modules/
 .vscode/
 
 # PRODUCTION -------------------------------------------------------------------
-gameon-frontend-web/build/
+web/build/
 
 # TESTING ----------------------------------------------------------------------
 coverage/
