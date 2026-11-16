@@ -4,32 +4,21 @@ const express = require('express');
 const MongoClient = require('mongodb').MongoClient;
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
-const path = require('path');
-const PORT = process.env.PORT || 5001;
+const nodemailer = require('nodemailer'); // email verification
 
 const app = express();
 
-app.set('port', (process.env.PORT || 5001));
+const PORT = process.env.PORT || 5001;
+app.set('port', PORT);
 
 app.use(cors());
 app.use(bodyParser.json());
 
-///////////////////////////////////////////////////
-// For Heroku deployment
-// Server static assets if in production
-if (process.env.NODE_ENV === 'production') {
-    // Set static folder
-    app.use(express.static('web/build'));
-    app.get('*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, 'web', 'build', 'index.html'));
-    });
-}
-
 const URI = process.env.MONGODB_URI;
 const DB_NAME = "gameon";
-const CLIENT = new MongoClient(URI);
-CLIENT.connect();
+const mongoClient = new MongoClient(URI);
+mongoClient.connect();
+const db = mongoClient.db(DB_NAME);
 
 // signup
 app.post('/api/signup', async (req, res, next) => {
@@ -41,12 +30,12 @@ app.post('/api/signup', async (req, res, next) => {
     var error = '';
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         const results = await
             db.collection('users').find({ Username: username }).toArray();
 
         if (results.length == 0) {
-            const db = CLIENT.db(DB_NAME);
+            const db = mongoClient.db(DB_NAME);
             const result = db.collection('users').insertOne(newUser);
         }
         else {
@@ -69,12 +58,12 @@ app.post('/api/userCheck', async (req, res, next) => {
     var results;
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         results = await
             db.collection('users').find({ Username: username }).toArray();
 
         if (results.length == 0) {
-            const db = CLIENT.db(DB_NAME);
+            const db = mongoClient.db(DB_NAME);
         }
         else {
             error = "User already exists";
@@ -96,7 +85,7 @@ app.post('/api/users', async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
 
         results = await
             db.collection('users').find({ Username: username }).toArray();
@@ -134,7 +123,7 @@ app.post('/api/email', async (req, res, next) => {
     // console.log("Backend Email: ", email);
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
 
         results = await
             db.collection('users').findOne({ Email: email.toLowerCase() });
@@ -161,7 +150,7 @@ app.post('/api/addReactionData', async (req, res, next) => {
     var error = '';
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         const results = await
             db.collection('ReactionGame').find({ Username: username }).toArray();
 
@@ -189,7 +178,7 @@ app.post('/api/ReactionLeaderboard', async (req, res, next) => {
     var results;
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         results = await
             db.collection('ReactionGame').find().sort({ Time: 1 }).toArray();
 
@@ -215,7 +204,7 @@ app.post('/api/addTypingData', async (req, res, next) => {
     var error = '';
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         const results = await
             db.collection('TypingGame').find({ Username: username }).toArray();
 
@@ -230,7 +219,7 @@ app.post('/api/addTypingData', async (req, res, next) => {
             error = "Guest Account";
         }
         else {
-            const db = CLIENT.db(DB_NAME);
+            const db = mongoClient.db(DB_NAME);
             const result = db.collection('TypingGame').insertOne(newData);
         }
     }
@@ -248,7 +237,7 @@ app.post('/api/TypingLeaderboard', async (req, res, next) => {
     var results;
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         results = await
             db.collection('TypingGame').find().sort({ Score: -1 }).toArray();
 
@@ -273,7 +262,7 @@ app.post('/api/userTypingData', async (req, res, next) => {
     var results;
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         const results = await
             db.collection('TypingGame').find({ Username: username }).toArray();
 
@@ -300,7 +289,7 @@ app.post('/api/userReactionData', async (req, res, next) => {
     var error = '';
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         const results = await
             db.collection('ReactionGame').find({ Username: username }).toArray();
 
@@ -322,11 +311,6 @@ app.post('/api/userReactionData', async (req, res, next) => {
     res.status(200).json(ret);
 });
 
-// Email Verification Start
-const nodemailer = require('nodemailer');
-const uuid = require('uuid');
-const { match } = require("assert");
-
 // POST route to send email
 app.post('/api/send-email', async (req, res) => {
     const { emailR, username } = req.body;
@@ -339,7 +323,7 @@ app.post('/api/send-email', async (req, res) => {
 
         if (username === undefined && emailR) {
             // Reset Password
-            const db = CLIENT.db(DB_NAME);
+            const db = mongoClient.db(DB_NAME);
             const results = await
                 db.collection('users').findOne({ Email: emailR });
 
@@ -347,7 +331,7 @@ app.post('/api/send-email', async (req, res) => {
         }
         else if (emailR && username) {
             // Get this verification code in your database along with the user's emailR
-            const db = CLIENT.db(DB_NAME);
+            const db = mongoClient.db(DB_NAME);
             const results = await
                 db.collection('users').findOne({ Username: username, Email: emailR });
 
@@ -400,7 +384,7 @@ app.post('/api/verify', async (req, res) => {
     const { email, code } = req.body;
     var error = '';
 
-    const db = CLIENT.db(DB_NAME);
+    const db = mongoClient.db(DB_NAME);
     const results = await
         db.collection('users').findOne({ Email: email });
 
@@ -425,7 +409,7 @@ app.post('/api/updatepassword', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     try {
-        const db = CLIENT.db(DB_NAME);
+        const db = mongoClient.db(DB_NAME);
         const results = await
             db.collection('users').findOne({ Email: email });
 
