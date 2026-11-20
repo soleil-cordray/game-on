@@ -33,13 +33,11 @@ app.post('/api/signup', async (req, res) => {
     Username: username, Email: email.toLowerCase(), Password: hash,
     Validate: false, VerifyCode: verificationCode
   };
-
   var error = "";
 
   try {
     const results = await db.collection('users').find({
-      Username: username
-    }).toArray();
+      Username: username }).toArray();
 
     if (results.length == 0) {
       db.collection('users').insertOne(newUser);
@@ -53,39 +51,15 @@ app.post('/api/signup', async (req, res) => {
   res.json({ error })
 });
 
-// CHECK EXISTING USER ---------------------------------------------------------
-app.post('/api/userCheck', async (req, res) => {
-  const { username } = req.body;
-
-  var results;
-  var error = "";
-
-  try {
-    results = await db.collection('users').find({
-      Username: username
-    }).toArray();
-
-    if (results.length > 0) {
-      error = "User already exists";
-    }
-  } catch (e) {
-    error = e;
-  }
-
-  res.json({ result: results, error });
-});
-
 // LOGIN -----------------------------------------------------------------------
 app.post('/api/users', async (req, res) => {
   const { username, password } = req.body;
-
   var match;
   var error = "";
 
   try {
     results = await db.collection('users').find({
-      Username: username
-    }).toArray();
+      Username: username }).toArray();
 
     match = await bcrypt.compare(password, results[0].Password);
 
@@ -110,14 +84,12 @@ app.post('/api/users', async (req, res) => {
 // EMAIL -----------------------------------------------------------------------
 app.post('/api/email', async (req, res) => {
   const { email } = req.body;
-
   var results;
   var error = "";
 
   try {
     results = await db.collection('users').findOne({
-      Email: email.toLowerCase()
-    });
+      Email: email.toLowerCase() });
 
     if (!results.Email) {
       error = "No Email Found";
@@ -129,26 +101,45 @@ app.post('/api/email', async (req, res) => {
   res.json({ result: results, error });
 });
 
+// CHECK EXISTING USER ---------------------------------------------------------
+app.post('/api/userCheck', async (req, res) => {
+  const { username } = req.body;
+  var results;
+  var error = "";
+
+  try {
+    results = await db.collection('users').find({
+      Username: username }).toArray();
+
+    if (results.length > 0) {
+      error = "User already exists";
+    }
+  } catch (e) {
+    error = e;
+  }
+
+  res.json({ result: results, error });
+});
+
 // =============================================================================
 // GAME ROUTES
 // =============================================================================
 
+// REACTION GAME ---------------------------------------------------------------
 app.post('/api/addReactionData', async (req, res) => {
   const { username, time, date, device } = req.body;
   const newData = {
     Username: username, Time: time, Date: date, Device: device
   };
-  var error = '';
+  var error = "";
 
   try {
     const results = await db.collection('ReactionGame').find({
-      Username: username
-    }).toArray();
+      Username: username }).toArray();
 
     if (results.length > 0) {
       if (time < results[0].Time) {
-        const query = { Username: username }
-        await db.collection("ReactionGame").deleteOne(query);
+        await db.collection('ReactionGame').deleteOne({ Username: username });
         db.collection('ReactionGame').insertOne(newData);
       }
     } else {
@@ -161,14 +152,14 @@ app.post('/api/addReactionData', async (req, res) => {
   res.json({ error });
 });
 
+// REACTION GAME LEADERBOARD ---------------------------------------------------
 app.post('/api/ReactionLeaderboard', async (req, res) => {
-  var error = '';
   var results;
+  var error = "";
 
   try {
     results = await db.collection('ReactionGame').find().sort({
-      Time: 1
-    }).toArray();
+      Time: 1 }).toArray();
 
     if (results.length <= 0) {
       error = "No Data";
@@ -180,84 +171,14 @@ app.post('/api/ReactionLeaderboard', async (req, res) => {
   res.json({ results, error });
 });
 
-app.post('/api/addTypingData', async (req, res) => {
-  const { accuracy, date, device, score, speed, username } = req.body;
-  const newData = {
-    Accuracy: accuracy, Date: date, Device: device,
-    Score: score, Speed: speed, Username: username
-  };
-  var error = '';
-
-  try {
-    const results = await db.collection('TypingGame').find({
-      Username: username
-    }).toArray();
-
-    if (results.length > 0) {
-      if (score > results[0].Score) {
-        const query = { Username: username }
-        await db.collection("TypingGame").deleteOne(query);
-        db.collection('TypingGame').insertOne(newData);
-      }
-    } else if (username === "Guest") {
-      error = "Guest Account";
-    } else {
-      db.collection('TypingGame').insertOne(newData);
-    }
-  } catch (e) {
-    error = e;
-  }
-
-  res.json({ error });
-});
-
-app.post('/api/TypingLeaderboard', async (req, res) => {
-  var error = '';
-  var results;
-
-  try {
-    results = await
-    db.collection('TypingGame').find().sort({ Score: -1 }).toArray();
-
-    if (results.length <= 0) {
-      error = "No Data";
-    }
-  } catch (e) {
-    error = e;
-  }
-
-  res.json({ results, error });
-});
-
-app.post('/api/userTypingData', async (req, res) => {
-  const { username } = req.body;
-  var error = '';
-
-  try {
-    const results = await db.collection('TypingGame').find({
-      Username: username
-    }).toArray();
-
-    if (results.length <= 0) {
-      error = "No User Exists";
-    }
-
-    var userScore = results[0].Score;
-  } catch (e) {
-    error = e;
-  }
-
-  res.json({ userScore, error });
-});
-
+// REACTION GAME DATA ----------------------------------------------------------
 app.post('/api/userReactionData', async (req, res) => {
   const { username } = req.body;
-  var error = '';
+  var error = "";
 
   try {
     const results = await db.collection('ReactionGame').find({
-      Username: username
-    }).toArray();
+      Username: username }).toArray();
 
     if (results.length <= 0) {
       error = "No User Exists";
@@ -269,6 +190,76 @@ app.post('/api/userReactionData', async (req, res) => {
   }
 
   res.json({ userTime, error });
+});
+
+// TYPING GAME -----------------------------------------------------------------
+app.post('/api/addTypingData', async (req, res) => {
+  const { accuracy, date, device, score, speed, username } = req.body;
+  const newData = {
+    Accuracy: accuracy, Date: date, Device: device,
+    Score: score, Speed: speed, Username: username
+  };
+  var error = "";
+
+  try {
+    const results = await db.collection('TypingGame').find({
+      Username: username }).toArray();
+
+    if (results.length > 0) {
+      if (score > results[0].Score) {
+        await db.collection('TypingGame').deleteOne({ Username: username });
+        db.collection('TypingGame').insertOne(newData);
+      }
+    } else if (username === 'Guest') {
+      error = "Guest Account";
+    } else {
+      db.collection('TypingGame').insertOne(newData);
+    }
+  } catch (e) {
+    error = e;
+  }
+
+  res.json({ error });
+});
+
+// TYPING GAME LEADERBOARD -----------------------------------------------------
+app.post('/api/TypingLeaderboard', async (req, res) => {
+  var results;
+  var error = "";
+
+  try {
+    results = await db.collection('TypingGame').find().sort({
+      Score: -1 }).toArray();
+
+    if (results.length <= 0) {
+      error = "No Data";
+    }
+  } catch (e) {
+    error = e;
+  }
+
+  res.json({ results, error });
+});
+
+// TYPING GAME DATA ------------------------------------------------------------
+app.post('/api/userTypingData', async (req, res) => {
+  const { username } = req.body;
+  var error = "";
+
+  try {
+    const results = await db.collection('TypingGame').find({
+      Username: username }).toArray();
+
+    if (results.length <= 0) {
+      error = "No User Exists";
+    }
+
+    var userScore = results[0].Score;
+  } catch (e) {
+    error = e;
+  }
+
+  res.json({ userScore, error });
 });
 
 // POST route to send email
